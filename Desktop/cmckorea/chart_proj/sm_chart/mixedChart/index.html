@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html ng-app="app">
+
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+
+  <script src="Chart.js"></script>
+  <script src="angular-chart.min.js"></script>
+  <script src="script.js"></script>
+</head>
+
+<body ng-app="app">
+  <button onclick='captureBtn();'>스크린샷 다운로드</button>
+  <div ng-controller="testController" id="resizable2">
+
+    <script type="text/javascript">
+      function captureBtn() {
+          var background = document.getElementById('resizable2').style.background;
+          if(background == "") {
+              document.getElementById('ng-app').style.background = "#fff";
+          }
+          html2canvas(document.getElementById('resizable2'), {
+              useCORS: true,
+              onrendered: function(canvas) {
+                  //document.body.appendChild(canvas);
+                  canvas.toBlob(function(blob) {
+                      saveAs(blob, 'download.png');
+                      $("#test").html('<img src=' + canvas.toDataURL("image/png") + '>');
+                    });
+              }
+          });
+      }
+    </script>
+    <div style="font-size: 20pt;
+                font-weight: bold;
+                text-align: center;">
+      <div id="title"></div>
+    <div id="ng-app" ng-app ng-controller="postRequest"></div>
+    <canvas id="base" class="chart-bar" chart-data="data" chart-labels="labels" chart-colors="colors" chart-dataset-override="datasetOverride">
+    </canvas>
+  </div>
+</body>
+
+</html>

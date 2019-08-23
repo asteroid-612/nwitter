@@ -1,0 +1,222 @@
+<!DOCTYPE HTML>
+<html ng-app="testApp">
+
+<head>
+	<meta charset="UTF-8">
+	<script src="canvasjs.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+	<script>
+		//moudle 선언
+		var testApp = angular.module('testApp', []);
+		//controller
+		testApp.controller('testController', function($scope, $http) {
+
+			var temp = location.href.split("?");
+			var data = temp[1].split("&");
+			var select = data[0];
+			var title = decodeURIComponent(data[1]);
+
+			// document.getElementById("title").innerHTML = title;
+
+			$scope.mapDataId = [];
+			$scope.mapDataListLat = [];
+			$scope.mapDataListLng = [];
+			$scope.mapDataName = [];
+			$scope.mapDataCategory = [];
+			$scope.mapDataImagae = [];
+
+			$scope.groupIdNumber1 = [];
+			$scope.groupIdNumber2 = [];
+			$scope.groupIdNumberElse = [];
+
+			//파라미터 값 선언
+			$scope.paramData = {
+				"blogid": "test1",
+				"restApiKey": "7b2f8c64c5395060b99bbf650b674e33",
+			}
+			$scope.paramData = angular.fromJson($scope.paramData);
+
+			$scope.postRequest = function() {
+
+				$scope.push = [];
+				$scope.group = [];
+				$http.get("http://www.mapplerk3.com/rest/v1/blogs/test1/dftBlogSettingInfo?restApiKey=eeeeb01c378357d1ad1313a5983ffc4e").
+				then(function(response) {
+					angular.forEach(response, function(list1) {
+						angular.forEach(list1.mapDftSettingInfo, function(list2) {
+							$scope.push.push(list2);
+							angular.forEach($scope.push[14], function(list3) {
+								$scope.groupVal = {};
+								$scope.groupVal["groupN"] = list3.g_c_seq;
+								$scope.groupVal["val"] = list3.category_name;
+								$scope.group.push($scope.groupVal);
+								//카테고리 이름 같은 것은 같은 배열로 할당
+							})
+						})
+					})
+					console.log("Successfully get data");
+					//console.log(response);
+					$scope.group1 = [];
+					$scope.group2 = [];
+					for (var i = 0; i < ($scope.group.length); i++) {
+						//전의 것과 비교해서 groupN가 다르면 group2에 val 넣어주기
+						if ($scope.group[i].groupN != $scope.group[0].groupN) {
+							$scope.group2.push($scope.group[i].val);
+							continue;
+						}
+						$scope.group1.push($scope.group[i].val);
+					}
+
+
+
+				$http({
+					method: "POST",
+					url: "http://mapplerk2.com/rest/v1/maps/test1",
+					data: $scope.paramData,
+					dataType: "json",
+					headers: {
+						'Content-Type': "application/x-www-form-urlencoded"
+					}
+				}).then(function successCallback(response) {
+					//console.log(response);
+					console.log("Successfully POST-ed data");
+					// 오브젝트 데이터 dataN에 다라서 갈라주고 그것을 데이터로 넣어주기. 넣어서 그냥 뿌려주면 끝. abc와de비교
+					var i = 0;
+					angular.forEach(response, function(list) {
+						angular.forEach(list.mapDataList, function(list) {
+								$scope.mapDataId.push(parseInt(list.oid));
+								$scope.mapDataListLat.push(parseFloat(list.lat));
+								$scope.mapDataListLng.push(parseFloat(list.lng));
+								$scope.mapDataName.push(list.name);
+								$scope.mapDataCategory.push(list.category);
+								$scope.mapDataImagae.push(list.s3ThumbObjUrl);
+								if($scope.group1.includes(list.category)){
+									$scope.groupIdNumber1.push(i);
+								}
+								else if($scope.group2.includes(list.category)) {
+									$scope.groupIdNumber2.push(i);
+								}else {
+									$scope.groupIdNumberElse.push(i);
+								}
+								i++;
+						})
+					})
+					console.log($scope.groupIdNumber1);
+					console.log($scope.groupIdNumber2);
+
+					// min, max 값 구해주기(axis 하드코딩 피하기 위함)
+					//var latMax = Math.max.apply(null, $scope.mapDataListLat);
+					//console.log(latMax);
+
+					$scope.mapDataObj = {};
+					$scope.dataPoint = [];
+					$scope.dataPoint2 = [];
+					//i=0부터 넣는 것이 아니라 인덱스 값을 그대로 가져와서 넣어야 한다.
+					for (var i = 0; i < ($scope.groupIdNumber1.length); i++) {
+						$scope.mapDataObj = {};
+						$scope.mapDataObj["x"] = $scope.mapDataListLat[$scope.groupIdNumber1[i]],
+							$scope.mapDataObj["y"] = $scope.mapDataListLng[$scope.groupIdNumber1[i]],
+							$scope.mapDataObj["pic"] = $scope.mapDataImagae[$scope.groupIdNumber1[i]],
+							$scope.mapDataObj["name"] = $scope.mapDataName[$scope.groupIdNumber1[i]],
+							$scope.mapDataObj["category"] = $scope.mapDataCategory[$scope.groupIdNumber1[i]],
+							$scope.dataPoint.push($scope.mapDataObj);
+					}
+					for (var i = 0; i < $scope.groupIdNumber2.length; i++) {
+						$scope.mapDataObj2 = {};
+						$scope.mapDataObj2["x"] = $scope.mapDataListLat[$scope.groupIdNumber2[i]],
+							$scope.mapDataObj2["y"] = $scope.mapDataListLng[$scope.groupIdNumber2[i]],
+							$scope.mapDataObj2["pic"] = $scope.mapDataImagae[$scope.groupIdNumber2[i]],
+							$scope.mapDataObj2["name"] = $scope.mapDataName[$scope.groupIdNumber2[i]],
+							$scope.mapDataObj2["category"] = $scope.mapDataCategory[$scope.groupIdNumber2[i]],
+							$scope.dataPoint2.push($scope.mapDataObj2);
+					}
+					var chart = new CanvasJS.Chart("chartContainer", {
+						animationEnabled: true,
+						zoomEnabled: true,
+						title: {
+							text: title
+						},
+						axisX: {
+							title: "lat",
+							minimum: 37.4,
+							maximum: 37.8
+						},
+						axisY: {
+							title: "lng",
+							minimum: 126.4,
+							maximum: 127.2
+						},
+						legend: {
+							cursor: "pointer",
+							itemclick: toggleDataSeries
+						},
+						data: [{
+								type: "scatter",
+								name: "group1("+$scope.group1+")",
+								showInLegend: true,
+								toolTipContent: "<span style='color:#4F81BC '><b>name: </b>{name}<br/><b>category: </b>{category}<br/><b>lat: </b>{x}<br/><b>lng: </b>{y}<br/><image src={pic}>",
+								dataPoints: $scope.dataPoint
+							},
+							{
+								type: "scatter",
+								name: "group2("+$scope.group2+")",
+								showInLegend: true,
+								markerType: "triangle",
+								toolTipContent: "<span style='color:#C0504E '><b>name: </b>{name}<br/<b>category: </b>{category}<br/><b>lat : </b>{x}<br/><b>lng: </b>{y}<br/><image src={pic}>",
+								dataPoints: $scope.dataPoint2
+							}
+						]
+					});
+					chart.render();
+
+					function toggleDataSeries(e) {
+						if (typeof(e.dataSeries.visible) === "undefined" || e.dataSeries.visible) {
+							e.dataSeries.visible = false;
+						} else {
+							e.dataSeries.visible = true;
+						}
+						e.chart.render();
+					}
+
+				}, function errorCallback(response) {
+					console.log("POST-ing of data failed");
+				});
+				});
+			};
+		});
+	</script>
+</head>
+
+<body ng-controller="testController">
+	<button onclick='captureBtn();'>스크린샷 다운로드</button>
+
+  <script type="text/javascript">
+    function captureBtn() {
+        var background = document.getElementById('ng-app').style.background;
+        if(background == "") {
+            document.getElementById('ng-app').style.background = "#fff";
+        }
+        html2canvas(document.getElementById('ng-app'), {
+            useCORS: true,
+            onrendered: function(canvas) {
+                //document.body.appendChild(canvas);
+                canvas.toBlob(function(blob) {
+                    saveAs(blob, 'download.png');
+                  });
+            }
+        });
+    }
+  </script>
+	<div id="ng-app" ng-app ng-controller="postRequest">
+		<!-- <div style="font-size: 20pt;
+	              font-weight: bold;
+	              text-align: center;">
+	    <div id="title"></div> -->
+		<div id="chartContainer" style="height: 600px; max-width: 900px; margin: 0px auto;"></div>
+</body>
+
+</html>
